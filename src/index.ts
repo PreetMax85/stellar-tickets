@@ -68,9 +68,17 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 
-// 7. SERVER STARTUP
-
-app.listen(env.PORT, () => {
+// 7. SERVER STARTUP (Fixed to bind to 0.0.0.0)
+app.listen(env.PORT, "0.0.0.0", () => {
   console.log(`[Server] Running in ${env.NODE_ENV} mode`);
-  console.log(`[Server] Listening on port: ${env.PORT}`);
+  console.log(`[Server] Listening on 0.0.0.0:${env.PORT}`);
 });
+
+// 8. GLOBAL SAFETY NETS (Added to prevent quiet 502 crashes)
+process.on('uncaughtException', (err) => {
+  console.error('CRITICAL: Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+})

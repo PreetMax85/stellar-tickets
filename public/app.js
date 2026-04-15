@@ -608,26 +608,11 @@ async function init() {
   renderNavbar();
   renderSkeletonSeats(20);
   renderSkeletonMovies(4);
-  // If the API takes more than 3 seconds, Render is waking up!
-  const wakeUpWarning = setTimeout(() => {
-    showToast(
-      "Server is waking up from sleep mode (Render Free Tier). Please wait ~50s...",
-      "info",
-    );
-  }, 3000);
-
-  try {
-    await Promise.all([fetchMovies(), fetchSeats(), fetchMyBookings()]);
-    clearTimeout(wakeUpWarning); // If it responds fast, cancel the warning
-
-    renderFeaturedMovie();
-    renderSeats();
-    renderMovies();
-    renderTickets();
-  } catch (err) {
-    clearTimeout(wakeUpWarning);
-    showToast("Failed to connect to the server. Please refresh.", "error");
-  }
+  await Promise.all([fetchMovies(), fetchSeats(), fetchMyBookings()]);
+  renderFeaturedMovie();
+  renderSeats();
+  renderMovies();
+  renderTickets();
 }
 
 document.addEventListener("DOMContentLoaded", init);

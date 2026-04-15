@@ -69,14 +69,3 @@ app.listen(env.PORT, () => {
   console.log(`[Server] Running in ${env.NODE_ENV} mode`);
   console.log(`[Server] Listening on port: ${env.PORT}`);
 });
-
-// 8. GLOBAL SAFETY NETS
-// Prevents the Render Node.js process from crashing entirely if a random database timeout 
-// or unhandled promise rejection occurs outside the Express request lifecycle.
-process.on('uncaughtException', (err) => {
-  console.error('CRITICAL: Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
-});

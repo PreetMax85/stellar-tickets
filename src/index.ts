@@ -21,7 +21,7 @@ const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 
 const app = express();
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 app.use(
   cors({
@@ -35,6 +35,11 @@ app.use(express.static(path.join(ROOT_DIR, "public")));
 
 app.use(express.json()); // Parses incoming JSON body payloads
 app.use(cookieParser()); // Parses HttpOnly cookies for our refresh tokens
+
+app.use((req, res, next) => {
+  console.log("REQ:", req.method, req.url);
+  next();
+});
 
 // Health Check Endpoint
 

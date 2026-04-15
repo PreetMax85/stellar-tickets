@@ -14,6 +14,10 @@ const authLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, 
+  validate: { 
+    xForwardedForHeader: false, 
+    trustProxy: false 
+  },
 });
 
 // Public routes

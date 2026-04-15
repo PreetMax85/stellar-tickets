@@ -1,0 +1,1123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stellar Tickets</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎟️</text></svg>"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      :root {
+        --amber: #f59e0b;
+        --amber-d: #d97706;
+        --emerald: #10b981;
+        --crimson: #ef4444;
+        --bg: #080c10;
+        --surface: #0f1419;
+        --surface2: #161d27;
+        --border: rgba(255, 255, 255, 0.07);
+        --text: #f1f5f9;
+        --muted: #64748b;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Film grain */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.025;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      }
+
+      .font-display {
+        font-family: "Syne", sans-serif;
+      }
+
+      #navbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        background: rgba(8, 12, 16, 0.85);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .hero-glow {
+        position: absolute;
+        top: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 700px;
+        height: 400px;
+        background: radial-gradient(
+          ellipse,
+          rgba(245, 158, 11, 0.12) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .screen-bar {
+        width: 80%;
+        max-width: 700px;
+        height: 6px;
+        margin: 0 auto 40px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(245, 158, 11, 0.15),
+          var(--amber),
+          rgba(245, 158, 11, 0.15),
+          transparent
+        );
+        border-radius: 4px;
+        box-shadow:
+          0 0 40px 8px rgba(245, 158, 11, 0.25),
+          0 0 80px 20px rgba(245, 158, 11, 0.08);
+        position: relative;
+      }
+      .screen-bar::before {
+        content: "SCREEN";
+        position: absolute;
+        top: -22px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        letter-spacing: 0.3em;
+        color: var(--amber);
+        opacity: 0.6;
+        font-family: "DM Sans", sans-serif;
+        font-weight: 500;
+      }
+      .screen-bar::after {
+        content: "";
+        position: absolute;
+        bottom: -30px;
+        left: 10%;
+        width: 80%;
+        height: 30px;
+        background: linear-gradient(
+          to bottom,
+          rgba(245, 158, 11, 0.06),
+          transparent
+        );
+      }
+
+      /* Seat grid */
+      #seat-grid {
+        display: grid;
+        grid-template-columns: repeat(10, minmax(0, 1fr));
+        gap: 8px;
+        max-width: 760px;
+        margin: 0 auto;
+      }
+
+      .seat {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        border: 1.5px solid transparent;
+        cursor: pointer;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease,
+          background 0.2s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.5);
+        user-select: none;
+      }
+      .seat:hover:not(.seat--booked) {
+        transform: translateY(-3px) scale(1.08);
+        z-index: 2;
+      }
+      .seat--available {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.45);
+        color: rgba(16, 185, 129, 0.7);
+      }
+      .seat--available:hover {
+        background: rgba(16, 185, 129, 0.28);
+        border-color: var(--emerald);
+        box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+        color: var(--emerald);
+      }
+      .seat--mine {
+        background: rgba(245, 158, 11, 0.2);
+        border-color: rgba(245, 158, 11, 0.6);
+        color: var(--amber);
+        box-shadow: 0 0 14px rgba(245, 158, 11, 0.2);
+      }
+      .seat--mine:hover {
+        background: rgba(245, 158, 11, 0.3);
+        border-color: var(--amber);
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        transform: translateY(-3px) scale(1.08);
+      }
+      .seat--booked {
+        background: rgba(239, 68, 68, 0.07);
+        border-color: rgba(239, 68, 68, 0.2);
+        color: rgba(239, 68, 68, 0.25);
+        cursor: not-allowed;
+      }
+      .seat--premium {
+        border-left-color: rgba(168, 85, 247, 0.7);
+      }
+      .seat--exec {
+        border-left-color: rgba(59, 130, 246, 0.7);
+      }
+      .seat--normal {
+        border-left-color: rgba(16, 185, 129, 0.7);
+      }
+      .seat--premium.seat--booked {
+        border-left-color: rgba(168, 85, 247, 0.2);
+      }
+      .seat--exec.seat--booked {
+        border-left-color: rgba(59, 130, 246, 0.2);
+      }
+
+      /* Tooltip */
+      .seat[data-tip]:hover::after {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.92);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 11px;
+        white-space: nowrap;
+        padding: 5px 10px;
+        border-radius: 6px;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .tier-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 99px;
+        font-size: 12px;
+        font-weight: 500;
+        border: 1px solid;
+      }
+      .tier-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      .movie-card {
+        flex: 0 0 200px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        transition:
+          transform 0.2s ease,
+          border-color 0.2s ease;
+      }
+      .movie-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+
+      /* Modal backdrop — shared */
+      .modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .modal-box {
+        background: rgba(15, 20, 25, 0.97);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 40px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+        position: relative;
+        animation: modal-in 0.25s ease;
+      }
+      @keyframes modal-in {
+        from {
+          opacity: 0;
+          transform: scale(0.95) translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      /* Confirm modal */
+      .confirm-box {
+        background: rgba(15, 20, 25, 0.97);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 36px;
+        width: 100%;
+        max-width: 380px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+        animation: modal-in 0.22s ease;
+        text-align: center;
+      }
+
+      .field {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 12px 16px;
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .field:focus {
+        border-color: rgba(245, 158, 11, 0.5);
+      }
+      .field::placeholder {
+        color: var(--muted);
+      }
+
+      .btn-primary {
+        width: 100%;
+        padding: 13px;
+        background: var(--amber);
+        color: #000;
+        font-family: "DM Sans", sans-serif;
+        font-weight: 500;
+        font-size: 15px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+      }
+      .btn-primary:hover {
+        background: var(--amber-d);
+      }
+      .btn-primary:active {
+        transform: scale(0.98);
+      }
+      .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-danger {
+        width: 100%;
+        padding: 13px;
+        background: rgba(239, 68, 68, 0.12);
+        color: #fca5a5;
+        font-family: "DM Sans", sans-serif;
+        font-weight: 500;
+        font-size: 15px;
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        border-radius: 10px;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+      }
+      .btn-danger:hover {
+        background: rgba(239, 68, 68, 0.22);
+      }
+      .btn-danger:active {
+        transform: scale(0.98);
+      }
+
+      .btn-nav {
+        padding: 8px 18px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 1px solid rgba(245, 158, 11, 0.5);
+        background: transparent;
+        color: var(--amber);
+        transition: background 0.2s;
+      }
+      .btn-nav:hover {
+        background: rgba(245, 158, 11, 0.1);
+      }
+
+      .btn-ghost {
+        padding: 8px 14px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--muted);
+        transition:
+          color 0.2s,
+          border-color 0.2s;
+      }
+      .btn-ghost:hover {
+        color: var(--text);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .tab-bar {
+        display: flex;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 10px;
+        padding: 4px;
+        margin-bottom: 28px;
+      }
+      .tab {
+        flex: 1;
+        padding: 8px;
+        text-align: center;
+        border-radius: 7px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--muted);
+        border: none;
+        background: transparent;
+        font-family: "DM Sans", sans-serif;
+        transition:
+          color 0.2s,
+          background 0.2s;
+      }
+      .tab.active {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--amber);
+      }
+
+      #toast-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 9000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-end;
+      }
+      .toast {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 18px;
+        border-radius: 12px;
+        font-size: 14px;
+        max-width: 320px;
+        border: 1px solid;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        animation: toast-in 0.3s ease;
+        pointer-events: none;
+      }
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+      @keyframes toast-out {
+        to {
+          opacity: 0;
+          transform: translateX(20px);
+        }
+      }
+      .toast--success {
+        background: rgba(16, 185, 129, 0.12);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #6ee7b7;
+      }
+      .toast--error {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+      }
+      .toast--info {
+        background: rgba(59, 130, 246, 0.12);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #93c5fd;
+      }
+
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          var(--surface) 0%,
+          var(--surface2) 50%,
+          var(--surface) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 6px;
+      }
+      @keyframes shimmer {
+        from {
+          background-position: 200% 0;
+        }
+        to {
+          background-position: -200% 0;
+        }
+      }
+
+      .movies-scroll {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--surface2) transparent;
+      }
+      .movies-scroll::-webkit-scrollbar {
+        height: 4px;
+      }
+      .movies-scroll::-webkit-scrollbar-thumb {
+        background: var(--surface2);
+        border-radius: 4px;
+      }
+
+      /* ── Ticket Stub ── */
+      .ticket {
+        display: flex;
+        width: 100%;
+        max-width: 480px;
+        border-radius: 14px;
+        overflow: visible;
+        animation: ticket-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        position: relative;
+      }
+      @keyframes ticket-in {
+        from {
+          opacity: 0;
+          transform: scale(0.88) translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      @keyframes ticket-out {
+        to {
+          opacity: 0;
+          transform: scale(0.88) translateY(8px);
+        }
+      }
+
+      .ticket__main {
+        flex: 1;
+        background: var(--surface);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-right: none;
+        border-radius: 14px 0 0 14px;
+        padding: 20px 24px;
+        position: relative;
+      }
+      /* Notch cutout */
+      .ticket__main::after {
+        content: "";
+        position: absolute;
+        right: -11px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--bg);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        z-index: 2;
+      }
+
+      .ticket__stub {
+        width: 96px;
+        background: var(--surface);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-left: 2px dashed rgba(245, 158, 11, 0.28);
+        border-radius: 0 14px 14px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 16px 10px;
+      }
+      .ticket__barcode {
+        width: 52px;
+        height: 56px;
+        border-radius: 3px;
+        background: repeating-linear-gradient(
+          90deg,
+          rgba(245, 158, 11, 0.85) 0px,
+          rgba(245, 158, 11, 0.85) 2px,
+          transparent 2px,
+          transparent 4px,
+          rgba(245, 158, 11, 0.45) 4px,
+          rgba(245, 158, 11, 0.45) 5px,
+          transparent 5px,
+          transparent 8px,
+          rgba(245, 158, 11, 0.85) 8px,
+          rgba(245, 158, 11, 0.85) 9px,
+          transparent 9px,
+          transparent 13px,
+          rgba(245, 158, 11, 0.65) 13px,
+          rgba(245, 158, 11, 0.65) 15px,
+          transparent 15px,
+          transparent 18px,
+          rgba(245, 158, 11, 0.85) 18px,
+          rgba(245, 158, 11, 0.85) 19px,
+          transparent 19px,
+          transparent 23px
+        );
+      }
+
+      .fade-up {
+        animation: fade-up 0.5s ease both;
+      }
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .delay-1 {
+        animation-delay: 0.1s;
+      }
+      .delay-2 {
+        animation-delay: 0.2s;
+      }
+      .delay-3 {
+        animation-delay: 0.3s;
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="navbar">
+      <div
+        style="
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 24px;
+          height: 60px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 10px">
+          <div
+            style="
+              width: 32px;
+              height: 32px;
+              background: var(--amber);
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#000"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="23 7 16 12 23 17 23 7" />
+              <rect x="1" y="5" width="15" height="14" rx="2" />
+            </svg>
+          </div>
+          <span
+            class="font-display"
+            style="font-size: 18px; letter-spacing: 0.02em"
+            >Stellar Tickets</span
+          >
+        </div>
+        <div
+          id="nav-auth"
+          style="display: flex; align-items: center; gap: 12px"
+        ></div>
+      </div>
+    </nav>
+
+    <main style="max-width: 1100px; margin: 0 auto; padding: 0 24px 80px">
+      <section
+        style="padding: 60px 0 48px; text-align: center; position: relative"
+        class="fade-up"
+      >
+        <div class="hero-glow"></div>
+        <div
+          id="featured-meta"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+          "
+        ></div>
+        <h1
+          id="featured-title"
+          class="font-display"
+          style="
+            font-size: clamp(28px, 5vw, 52px);
+            letter-spacing: -0.01em;
+            line-height: 1.05;
+            margin-bottom: 8px;
+          "
+        >
+          &nbsp;
+        </h1>
+        <p
+          id="featured-sub"
+          style="color: var(--muted); font-size: 15px; font-style: italic"
+        >
+          &nbsp;
+        </p>
+      </section>
+
+      <section style="margin-bottom: 80px" class="fade-up delay-2">
+        <div
+          style="
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+          "
+        >
+          <span
+            class="tier-pill"
+            style="
+              border-color: rgba(168, 85, 247, 0.4);
+              color: #c084fc;
+              background: rgba(168, 85, 247, 0.07);
+            "
+            ><span
+              class="tier-dot"
+              style="background: rgba(168, 85, 247, 0.7)"
+            ></span
+            >Premium · $25</span
+          >
+          <span
+            class="tier-pill"
+            style="
+              border-color: rgba(59, 130, 246, 0.4);
+              color: #93c5fd;
+              background: rgba(59, 130, 246, 0.07);
+            "
+            ><span
+              class="tier-dot"
+              style="background: rgba(59, 130, 246, 0.7)"
+            ></span
+            >Executive · $18</span
+          >
+          <span
+            class="tier-pill"
+            style="
+              border-color: rgba(16, 185, 129, 0.4);
+              color: #6ee7b7;
+              background: rgba(16, 185, 129, 0.07);
+            "
+            ><span
+              class="tier-dot"
+              style="background: rgba(16, 185, 129, 0.7)"
+            ></span
+            >Normal · $12</span
+          >
+          <span
+            style="width: 1px; background: var(--border); margin: 0 4px"
+          ></span>
+          <span
+            class="tier-pill"
+            style="
+              border-color: rgba(245, 158, 11, 0.4);
+              color: var(--amber);
+              background: rgba(245, 158, 11, 0.07);
+            "
+            ><span
+              class="tier-dot"
+              style="background: rgba(245, 158, 11, 0.7)"
+            ></span
+            >Your seat</span
+          >
+          <span
+            class="tier-pill"
+            style="
+              border-color: rgba(239, 68, 68, 0.2);
+              color: #fca5a5;
+              background: rgba(239, 68, 68, 0.05);
+            "
+            ><span
+              class="tier-dot"
+              style="background: rgba(239, 68, 68, 0.3)"
+            ></span
+            >Booked</span
+          >
+        </div>
+
+        <div class="screen-bar"></div>
+        <div id="seat-grid"></div>
+        <p
+          id="seat-caption"
+          style="
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 20px;
+          "
+        >
+          Loading seats…
+        </p>
+
+        <!-- Active Tickets -->
+        <div id="tickets-section" style="display: none; margin-top: 40px">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              margin-bottom: 20px;
+            "
+          >
+            <h2 class="font-display" style="font-size: 18px">
+              Your Active Tickets
+            </h2>
+            <span
+              id="ticket-count"
+              style="
+                font-size: 12px;
+                padding: 3px 10px;
+                border-radius: 99px;
+                background: rgba(245, 158, 11, 0.12);
+                border: 1px solid rgba(245, 158, 11, 0.3);
+                color: var(--amber);
+                font-weight: 500;
+              "
+            ></span>
+          </div>
+          <div
+            id="tickets-list"
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+              max-width: 480px;
+            "
+          ></div>
+        </div>
+      </section>
+
+      <section class="fade-up delay-3">
+        <div
+          style="
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 24px;
+          "
+        >
+          <h2
+            class="font-display"
+            style="font-size: 22px; letter-spacing: 0.01em"
+          >
+            More Showing
+          </h2>
+          <span style="color: var(--muted); font-size: 13px"
+            >Coming soon to this theater</span
+          >
+        </div>
+        <div class="movies-scroll" id="movies-list"></div>
+      </section>
+    </main>
+
+    <!-- Auth Modal -->
+    <div
+      id="auth-modal"
+      class="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sign in or register"
+    >
+      <div class="modal-box">
+        <button
+          onclick="closeAuthModal()"
+          style="
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 4px;
+          "
+          aria-label="Close"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+        <div style="text-align: center; margin-bottom: 24px">
+          <div
+            style="
+              width: 44px;
+              height: 44px;
+              background: var(--amber);
+              border-radius: 12px;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 12px;
+            "
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#000"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="23 7 16 12 23 17 23 7" />
+              <rect x="1" y="5" width="15" height="14" rx="2" />
+            </svg>
+          </div>
+          <div class="font-display" style="font-size: 20px">
+            Stellar Tickets
+          </div>
+        </div>
+        <div class="tab-bar">
+          <button
+            class="tab active"
+            id="tab-login"
+            onclick="switchTab('login')"
+          >
+            Sign In
+          </button>
+          <button class="tab" id="tab-register" onclick="switchTab('register')">
+            Create Account
+          </button>
+        </div>
+        <form
+          id="form-login"
+          onsubmit="handleLogin(event)"
+          style="display: flex; flex-direction: column; gap: 14px"
+        >
+          <input
+            class="field"
+            type="email"
+            id="login-email"
+            placeholder="Email address"
+            required
+            autocomplete="email"
+          />
+          <input
+            class="field"
+            type="password"
+            id="login-password"
+            placeholder="Password"
+            required
+            autocomplete="current-password"
+          />
+          <button class="btn-primary" type="submit" id="login-btn">
+            Sign In
+          </button>
+          <p style="text-align: center; font-size: 13px; color: var(--muted)">
+            No account?
+            <button
+              type="button"
+              onclick="switchTab('register')"
+              style="
+                background: none;
+                border: none;
+                color: var(--amber);
+                cursor: pointer;
+                font-size: 13px;
+                font-family: inherit;
+              "
+            >
+              Create one
+            </button>
+          </p>
+        </form>
+        <form
+          id="form-register"
+          onsubmit="handleRegister(event)"
+          style="display: none; flex-direction: column; gap: 14px"
+        >
+          <input
+            class="field"
+            type="text"
+            id="reg-name"
+            placeholder="Full name"
+            required
+            autocomplete="name"
+          />
+          <input
+            class="field"
+            type="email"
+            id="reg-email"
+            placeholder="Email address"
+            required
+            autocomplete="email"
+          />
+          <input
+            class="field"
+            type="password"
+            id="reg-password"
+            placeholder="Password (min 8 chars, 1 uppercase, 1 number)"
+            required
+            autocomplete="new-password"
+          />
+          <button class="btn-primary" type="submit" id="register-btn">
+            Create Account
+          </button>
+          <p style="text-align: center; font-size: 13px; color: var(--muted)">
+            Already have one?
+            <button
+              type="button"
+              onclick="switchTab('login')"
+              style="
+                background: none;
+                border: none;
+                color: var(--amber);
+                cursor: pointer;
+                font-size: 13px;
+                font-family: inherit;
+              "
+            >
+              Sign in
+            </button>
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div
+      id="confirm-modal"
+      class="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Confirm booking action"
+    >
+      <div class="confirm-box">
+        <div
+          id="confirm-icon"
+          style="margin-bottom: 16px; font-size: 36px; line-height: 1"
+        ></div>
+        <h3
+          id="confirm-title"
+          class="font-display"
+          style="font-size: 20px; margin-bottom: 6px"
+        ></h3>
+        <p
+          id="confirm-subtitle"
+          style="
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+          "
+        ></p>
+        <div
+          id="confirm-details"
+          style="
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          "
+        ></div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <button id="confirm-action-btn"></button>
+          <button
+            onclick="closeConfirmModal()"
+            class="btn-ghost"
+            style="width: 100%"
+          >
+            Go back
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-container" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
